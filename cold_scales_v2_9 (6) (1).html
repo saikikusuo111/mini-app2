@@ -5840,6 +5840,24 @@ function IntroSequence({ onDone }) {
     };
   }, []);
 
+  const registerTimer = useCallback((cb, ms) => {
+    const id = setTimeout(cb, ms);
+    timersRef.current.push(id);
+    return id;
+  }, []);
+
+  useEffect(() => {
+    if (typeof window === 'undefined' || !window.matchMedia) return;
+    reducedMotionRef.current = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  }, []);
+
+  useEffect(() => {
+    return () => {
+      timersRef.current.forEach(clearTimeout);
+      timersRef.current = [];
+    };
+  }, []);
+
   // ── Animation: progress 0→1 за 1.7s, loading% синхронно ──────────────
   useEffect(() => {
     if (phase !== 'reveal') return;
