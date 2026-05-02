@@ -5551,7 +5551,7 @@ function LabChrome() {
 //  Skip — fast-forward по клику.
 // ═══════════════════════════════════════════════════════════════════════════
 
-const INTRO_STORAGE_KEY = 'intro_seen_at';
+const INTRO_STORAGE_KEY = 'coldscales:intro_seen_at';
 const INTRO_TTL_MS = 7 * 24 * 60 * 60 * 1000;  // 7 дней
 
 // Текст-заглушки (полируется в финальной итерации)
@@ -5562,6 +5562,11 @@ const INTRO_SUBTITLE = 'NOT A STUDIO — COLD JUDGMENT';
 const GLITCH_COLS = 13;             // 100/13 ≈ 7.69% → 13 столбцов точно как у Sutera
 const GLITCH_DISSOLVE_DURATION = 1700; // мс на полное растворение всей маски
 const GLITCH_CELL_FADE_MS = 600;    // длительность фейда одной ячейки
+const INTRO_SETTLED_DELAY = 250;
+const INTRO_LEAVE_DELAY = 600;
+const INTRO_FADE_OUT_MS = 550;
+const INTRO_SKIP_FADE_MS = 350;
+const INTRO_REDUCED_MOTION_MS = 120;
 
 // Алфавит для scramble (моноширинные глифы)
 const SCRAMBLE_GLYPHS = '@#$%&*+=/\\<>?!~|';
@@ -5747,14 +5752,42 @@ function IntroSequence({ onDone }) {
   const [subtitleStarted, setSubtitleStarted] = useState(false);
   const skipRef = useRef(false);
   const doneCalledRef = useRef(false);
+  const reducedMotionRef = useRef(false);
+  const timersRef = useRef([]);
 
   // Crosshair: длина обводки для DrawSVG-эффекта (расчёт после mount).
   // Окружность r=46 + 4 луча → ~289 + 4×30 = ~409 единиц.
   const CROSSHAIR_LEN = 600;
 
+  const registerTimer = useCallback((cb, ms) => {
+    const id = setTimeout(cb, ms);
+    timersRef.current.push(id);
+    return id;
+  }, []);
+
+  useEffect(() => {
+    if (typeof window === 'undefined' || !window.matchMedia) return;
+    reducedMotionRef.current = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  }, []);
+
+  useEffect(() => {
+    return () => {
+      timersRef.current.forEach(clearTimeout);
+      timersRef.current = [];
+    };
+  }, []);
+
   // ── Animation: progress 0→1 за 1.7s, loading% синхронно ──────────────
   useEffect(() => {
     if (phase !== 'reveal') return;
+    if (reducedMotionRef.current) {
+      setProgress(1);
+      setLoadingPct(100);
+      setCrosshairDrawn(true);
+      setSubtitleStarted(true);
+      registerTimer(() => setPhase('leaving'), INTRO_REDUCED_MOTION_MS);
+      return;
+    }
     let raf;
     const start = performance.now();
     const duration = GLITCH_DISSOLVE_DURATION;
@@ -5797,22 +5830,22 @@ function IntroSequence({ onDone }) {
   // ── settled → пауза 250ms → запуск scramble ──────────────────────────
   useEffect(() => {
     if (phase !== 'settled') return;
-    const t = setTimeout(() => setSubtitleStarted(true), 250);
+    const t = registerTimer(() => setSubtitleStarted(true), INTRO_SETTLED_DELAY);
     return () => clearTimeout(t);
-  }, [phase]);
+  }, [phase, registerTimer]);
 
   // ── Scramble done → hold 600ms → fade-out ────────────────────────────
   const handleSubtitleDone = useCallback(() => {
-    setTimeout(() => {
+    registerTimer(() => {
       setPhase('leaving');
-      setTimeout(() => {
+      registerTimer(() => {
         if (!doneCalledRef.current) {
           doneCalledRef.current = true;
           onDone?.();
         }
-      }, 550);
-    }, 600);
-  }, [onDone]);
+      }, INTRO_FADE_OUT_MS);
+    }, INTRO_LEAVE_DELAY);
+  }, [onDone, registerTimer]);
 
   const handleSkip = useCallback(() => {
     if (skipRef.current) return;
@@ -5822,13 +5855,13 @@ function IntroSequence({ onDone }) {
     setCrosshairDrawn(true);
     setSubtitleStarted(true);
     setPhase('leaving');
-    setTimeout(() => {
+    registerTimer(() => {
       if (!doneCalledRef.current) {
         doneCalledRef.current = true;
         onDone?.();
       }
-    }, 350);
-  }, [onDone]);
+    }, INTRO_SKIP_FADE_MS);
+  }, [onDone, registerTimer]);
 
   return (
     <div
@@ -6681,13 +6714,13 @@ function App() {
 function Root() {
   const [introVisible, setIntroVisible] = useState(() => {
     try {
-      const seenAt = parseInt(localStorage.getItem('coldscales:intro_seen_at') || '0', 10);
+      const seenAt = parseInt(localStorage.getItem(INTRO_STORAGE_KEY) || '0', 10);
       return !seenAt || (Date.now() - seenAt) > INTRO_TTL_MS;
     } catch { return true; }
   });
 
   const handleIntroDone = () => {
-    try { localStorage.setItem('coldscales:intro_seen_at', String(Date.now())); } catch {}
+    try { localStorage.setItem(INTRO_STORAGE_KEY, String(Date.now())); } catch {}
     setIntroVisible(false);
   };
 
