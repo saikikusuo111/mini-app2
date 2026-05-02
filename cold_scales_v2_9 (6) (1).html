@@ -2081,7 +2081,7 @@
     position: fixed;
     inset: 0;
     z-index: 200;
-    background: var(--paper);
+    background: #f6f5f0;
     display: flex;
     flex-direction: column;
     justify-content: space-between;
@@ -2106,7 +2106,7 @@
     height: 100%;
     pointer-events: none;
     z-index: 1;
-    color: var(--ink-whisper);
+    color: rgba(15,15,15,0.2);
   }
   .intro-blueprint line {
     stroke: currentColor;
@@ -2116,7 +2116,7 @@
     animation: intro-blueprint-fade-in 0.6s var(--ease-out) 0.1s forwards;
   }
   .intro-blueprint rect {
-    fill: var(--ink);
+    fill: #fff;
     opacity: 0;
     animation: intro-blueprint-rect-in 0.5s var(--ease-out) 0.4s forwards;
   }
@@ -2144,18 +2144,18 @@
   .intro-title {
     font-family: var(--grotesk);
     font-weight: 600;
-    font-size: clamp(48px, 13vw, 88px);
+    font-size: clamp(44px, 11vw, 74px);
     line-height: 0.92;
     letter-spacing: -0.04em;
     text-transform: uppercase;
-    color: var(--ink);
+    color: #141414;
     text-align: center;
     margin: 0;
     white-space: pre-line;
     /* Тайтл уже отрендерен финально — глитч-маска поверх его постепенно сходит */
   }
   .intro-title .intro-title-stop {
-    color: var(--ink);
+    color: #141414;
     /* Финальная точка как у Sutera — sparks-аналог */
   }
   .intro-subtitle {
@@ -2164,7 +2164,7 @@
     font-size: 12px;
     letter-spacing: 0.26em;
     text-transform: uppercase;
-    color: var(--ink);
+    color: #242424;
     text-align: center;
     min-height: 1.3em;
     opacity: 0;
@@ -2175,21 +2175,61 @@
   .intro-subtitle .sub-char { display: inline-block; font-variant-numeric: tabular-nums; width: 1ch; text-align: center; }
   .intro-subtitle .sub-sep { display: inline-block; width: 1.5ch; text-align: center; }
 
-  /* ── Layer 3: Crosshair (DrawSVG-style stroke reveal) ─────────────── */
+  /* ── Layer 3: Sigil + Crosshair (DrawSVG-style stroke reveal) ─────── */
+  .intro-sigil {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: clamp(130px, 34vw, 220px);
+    height: clamp(210px, 52vw, 350px);
+    transform: translate(-50%, -52%) rotate(-5deg);
+    pointer-events: none;
+    z-index: 3;
+    color: #111;
+    opacity: 0;
+    transition: opacity 0.45s var(--ease-out), transform 1.2s var(--ease-out);
+  }
+  .intro-sigil.drawn {
+    opacity: 0.95;
+    transform: translate(-50%, -52%) rotate(0deg);
+  }
+  .intro-sigil.lit {
+    animation: intro-sigil-wobble 3.2s ease-in-out infinite;
+    filter: drop-shadow(0 0 5px rgba(0,0,0,0.12));
+  }
+  @keyframes intro-sigil-wobble {
+    0%,100% { transform: translate(-50%, -52%) rotate(0deg); }
+    40% { transform: translate(-50.2%, -51.6%) rotate(1deg); }
+    60% { transform: translate(-49.8%, -52.2%) rotate(-0.8deg); }
+  }
+  .intro-sigil-path {
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 3.1;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+    stroke-dasharray: var(--len, 600);
+    stroke-dashoffset: var(--len, 600);
+    transition: stroke-dashoffset 1.55s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+  .intro-sigil.drawn .intro-sigil-path {
+    stroke-dashoffset: 0;
+  }
+
   .intro-crosshair {
     position: absolute;
     top: 50%;
     left: 50%;
     transform: translate(-50%, -50%);
-    width: clamp(120px, 32vw, 200px);
-    height: clamp(120px, 32vw, 200px);
+    width: clamp(96px, 24vw, 150px);
+    height: clamp(96px, 24vw, 150px);
     pointer-events: none;
     z-index: 3;
     color: var(--ink);
     opacity: 0;
     transition: opacity 0.4s var(--ease-out);
   }
-  .intro-crosshair.lit { opacity: 0.85; }
+  .intro-crosshair.lit { opacity: 0.64; }
   .intro-crosshair .ch-stroke {
     fill: none;
     stroke: currentColor;
@@ -2232,9 +2272,17 @@
   .glitch-mask .gm-cell {
     width: 7.6923%;       /* 100/13 — 13 столбцов точно как у Sutera */
     aspect-ratio: 1 / 1;
-    background: var(--paper);
+    background: #fff;
     transition: opacity 400ms cubic-bezier(0.4, 0, 0.2, 1);
     will-change: opacity;
+  }
+  .intro-overlay .glitch-mask .gm-cell.flicker {
+    animation: intro-cell-flicker var(--flicker-dur, 920ms) steps(2, end) infinite;
+    animation-delay: var(--flicker-delay, 0ms);
+  }
+  @keyframes intro-cell-flicker {
+    0%, 100% { opacity: var(--cell-opacity, 0.92); }
+    50% { opacity: calc(var(--cell-opacity, 0.92) * 0.62); }
   }
   /* В intro-режиме маска сидит поверх тайтла */
   .intro-overlay .glitch-mask { z-index: 4; }
@@ -2276,6 +2324,10 @@
     display: flex;
     gap: 10px;
     align-items: baseline;
+    position: fixed;
+    right: 22px;
+    bottom: 22px;
+    z-index: 7;
   }
   .intro-loading-num {
     font-variant-numeric: tabular-nums;
@@ -2288,6 +2340,7 @@
   .intro-bottom-right {
     color: var(--ink-muted);
     transition: opacity 0.4s var(--ease-out);
+    opacity: 0;
   }
   .intro-bottom-right.hidden { opacity: 0; }
 
@@ -2307,6 +2360,8 @@
     .intro-crosshair .ch-stroke { transition: none !important; stroke-dashoffset: 0 !important; }
     .intro-crosshair .ch-dot { transition: none !important; opacity: 1 !important; transform: scale(1) !important; }
     .glitch-mask .gm-cell { transition: none !important; }
+    .intro-sigil { animation: none !important; transform: translate(-50%, -52%) !important; }
+    .intro-sigil-path { transition: none !important; stroke-dashoffset: 0 !important; }
   }
 
 
@@ -5637,7 +5692,10 @@ function GlitchMask({
       // к 85% прогресса, оставшиеся 15% времени их CSS-transition завершается.
       // Это гарантирует полное растворение маски синхронно с loading→100%.
       const dissolveOrder = rand() * 0.85;
-      arr.push({ i, op, useBlend, dissolveOrder });
+      const flicker = rand() > 0.7;
+      const flickerDelay = Math.floor(rand() * 1500);
+      const flickerDur = 650 + Math.floor(rand() * 800);
+      arr.push({ i, op, useBlend, dissolveOrder, flicker, flickerDelay, flickerDur });
     }
     // Для idle-режима — отдельные параметры мерцания
     if (idle) {
@@ -5664,10 +5722,13 @@ function GlitchMask({
         return (
           <div
             key={c.i}
-            className="gm-cell"
+            className={`gm-cell ${c.flicker ? 'flicker' : ''}`}
             style={{
               opacity: cellOpacity,
               mixBlendMode: cellBlend,
+              '--cell-opacity': c.op,
+              '--flicker-delay': `${c.flickerDelay}ms`,
+              '--flicker-dur': `${c.flickerDur}ms`,
             }}
           />
         );
@@ -5749,6 +5810,7 @@ function IntroSequence({ onDone }) {
   const [progress, setProgress] = useState(0);    // 0..1 — для glitch-mask
   const [loadingPct, setLoadingPct] = useState(0);// 0..100 для текста
   const [crosshairDrawn, setCrosshairDrawn] = useState(false);
+  const [sigilDrawn, setSigilDrawn] = useState(false);
   const [subtitleStarted, setSubtitleStarted] = useState(false);
   const skipRef = useRef(false);
   const doneCalledRef = useRef(false);
@@ -5758,6 +5820,25 @@ function IntroSequence({ onDone }) {
   // Crosshair: длина обводки для DrawSVG-эффекта (расчёт после mount).
   // Окружность r=46 + 4 луча → ~289 + 4×30 = ~409 единиц.
   const CROSSHAIR_LEN = 600;
+  const SIGIL_LEN = 860;
+
+  const registerTimer = useCallback((cb, ms) => {
+    const id = setTimeout(cb, ms);
+    timersRef.current.push(id);
+    return id;
+  }, []);
+
+  useEffect(() => {
+    if (typeof window === 'undefined' || !window.matchMedia) return;
+    reducedMotionRef.current = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  }, []);
+
+  useEffect(() => {
+    return () => {
+      timersRef.current.forEach(clearTimeout);
+      timersRef.current = [];
+    };
+  }, []);
 
   const registerTimer = useCallback((cb, ms) => {
     const id = setTimeout(cb, ms);
@@ -5784,6 +5865,7 @@ function IntroSequence({ onDone }) {
       setProgress(1);
       setLoadingPct(100);
       setCrosshairDrawn(true);
+      setSigilDrawn(true);
       setSubtitleStarted(true);
       registerTimer(() => setPhase('leaving'), INTRO_REDUCED_MOTION_MS);
       return;
@@ -5815,6 +5897,7 @@ function IntroSequence({ onDone }) {
       const go = () => {
         if (cancelled || skipRef.current) return;
         requestAnimationFrame(() => setCrosshairDrawn(true));
+        registerTimer(() => setSigilDrawn(true), 80);
       };
       if (document.fonts && document.fonts.ready) {
         const t = setTimeout(go, 800);
@@ -5825,7 +5908,7 @@ function IntroSequence({ onDone }) {
     };
     const timer = setTimeout(start, 300);
     return () => { cancelled = true; clearTimeout(timer); };
-  }, []);
+  }, [registerTimer]);
 
   // ── settled → пауза 250ms → запуск scramble ──────────────────────────
   useEffect(() => {
@@ -5853,6 +5936,7 @@ function IntroSequence({ onDone }) {
     setProgress(1);
     setLoadingPct(100);
     setCrosshairDrawn(true);
+    setSigilDrawn(true);
     setSubtitleStarted(true);
     setPhase('leaving');
     registerTimer(() => {
@@ -5920,6 +6004,18 @@ function IntroSequence({ onDone }) {
         />
       </div>
 
+      <svg
+        className={`intro-sigil ${sigilDrawn ? 'drawn lit' : ''}`}
+        viewBox="0 0 200 320"
+        aria-hidden="true"
+        style={{ '--len': SIGIL_LEN }}
+      >
+        <path
+          className="intro-sigil-path"
+          d="M157 36C125 16 82 20 58 45C37 67 38 100 64 116C84 128 112 130 130 142C151 155 155 180 138 201C115 228 66 235 39 214M39 214C67 244 120 247 150 223C178 201 178 166 154 149C135 136 106 133 88 122C66 109 58 84 73 63C92 36 132 27 157 36"
+        />
+      </svg>
+
       {/* Layer 3: Crosshair (circle + four ticks, drawn with DrawSVG effect) */}
       <svg
         className={`intro-crosshair ${crosshairDrawn ? 'drawn lit' : ''}`}
@@ -5951,7 +6047,7 @@ function IntroSequence({ onDone }) {
       <div className="intro-bottom">
         <div className="intro-bottom-left">SN-CS2926-V29A</div>
         <div className={`intro-bottom-right ${phase === 'leaving' ? 'hidden' : ''}`}>
-          → TAP TO ENTER
+          READY
         </div>
       </div>
     </div>
