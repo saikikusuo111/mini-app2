@@ -2324,6 +2324,10 @@
     display: flex;
     gap: 10px;
     align-items: baseline;
+    position: fixed;
+    right: 22px;
+    bottom: 22px;
+    z-index: 7;
   }
   .intro-loading-num {
     font-variant-numeric: tabular-nums;
@@ -2336,6 +2340,7 @@
   .intro-bottom-right {
     color: var(--ink-muted);
     transition: opacity 0.4s var(--ease-out);
+    opacity: 0;
   }
   .intro-bottom-right.hidden { opacity: 0; }
 
@@ -6024,7 +6029,7 @@ function IntroSequence({ onDone }) {
       <div className="intro-bottom">
         <div className="intro-bottom-left">SN-CS2926-V29A</div>
         <div className={`intro-bottom-right ${phase === 'leaving' ? 'hidden' : ''}`}>
-          → TAP TO ENTER
+          READY
         </div>
       </div>
     </div>
